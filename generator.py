@@ -1,8 +1,6 @@
 from random import randint
 import os
-
-
-ROOT_DIR = os.path.dirname(os.path.abspath('config.py'))
+from config import ROOT_DIR
 
 
 def gen():
@@ -25,3 +23,5 @@ def gen():
                 for i in range(9-len(str_num)):
                     str_num = "0" + str_num
             file.write("89" + str_num + "\n")
+
+    file.close()
