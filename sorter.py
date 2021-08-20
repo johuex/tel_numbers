@@ -17,7 +17,7 @@ def sorter_1():
         for line in f_in:  # 1, 2
             j += 1
             if j % 111111111 == 0:
-                files[i] = open(os.path.join(ROOT_DIR, file_name.format(i)), 'wr')
+                files[i] = open(os.path.join(ROOT_DIR, file_name.format(i)), 'w+')
                 temp_numbers.sort()  # linear sort by Python
                 for z in temp_numbers:
                     files[i].write(str(z) + "\n")
