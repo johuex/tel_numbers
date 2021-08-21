@@ -9,6 +9,7 @@ if os.path.exists(os.path.join(ROOT_DIR, 'gen_numbers.txt')):
 else:
     print("Numbers are generating!")
     gen()
+
 sorter_1()
 # sorter_2()
 

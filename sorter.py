@@ -8,7 +8,7 @@ def sorter_1():
     start_split = time()
     file_name = "temp_{}"
     # split input file into several parts
-    files = [None]*9  # saves i/o
+    files = []  # saves i/o
     temp_numbers = []
     j = 0
     i = 0
@@ -16,25 +16,27 @@ def sorter_1():
     with open(os.path.join(ROOT_DIR, 'gen_numbers.txt')) as f_in:
         for line in f_in:  # 1, 2
             j += 1
-            if j % 111111111 == 0:
-                files[i] = open(os.path.join(ROOT_DIR, file_name.format(i)), 'w+')
-                temp_numbers.sort()  # linear sort by Python
+            if j % 37037037 == 0:
+                files.append(open(os.path.join(ROOT_DIR, file_name.format(i)), 'w+'))
+                temp_numbers.sort()  # Timsort in Python
                 for z in temp_numbers:
                     files[i].write(str(z) + "\n")
                 i += 1
                 temp_numbers.clear()
             temp_numbers.append(int(line))
-    print("Split and sorting parts time: %s seconds" % (time() - start_split))
-    '''i = 7
-    for l in range(i+1):
+    print("Split and sorting parts time: {} minutes".format((time() - start_split)/60))
+    #i = 27
+    '''for l in range(i):
         files[l] = open(os.path.join(ROOT_DIR, file_name.format(l)))'''
     # external sorting
     print("Start external sorting")
     start_sort = time()
     f_out = open(os.path.join(ROOT_DIR, 'sort1_numbers.txt'), 'w')  # 3
     temp_numbers.clear()
+    files_copy = files.copy()
 
-    for p in range(i+1):  # 4
+    for p in range(i):  # 4
+        files[p].seek(0)  # cursor in each file to it`s start
         temp_numbers.append(int(files[p].readline()[:11]))
     while True:
         min_i = temp_numbers.index(min(temp_numbers))  # 5.1
@@ -44,13 +46,20 @@ def sorter_1():
             temp_numbers.pop(min_i)
             files[min_i].close()
             files.pop(min_i)
-            os.remove(os.path.join(ROOT_DIR, file_name.format(min_i)))
         else:
             temp_numbers[min_i] = int(k)
         if len(files) == 0:
             break
 
-    print("External sorting time: %s seconds" % (time() - start_sort))
+    for w in range(i):  # 6
+        try:
+            files_copy[w].close()
+        except:
+            pass
+        finally:
+            os.remove(os.path.join(ROOT_DIR, file_name.format(w)))
+    f_out.close()
+    print("External sorting time: {} minutes".format((time() - start_sort)/60))
 
 
 def sorter_2():
