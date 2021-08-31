@@ -1,57 +1,61 @@
 import os
 from config import ROOT_DIR
 from time import time
-from sys import getsizeof
 
 
 def sorter_1():
     start_split = time()
     file_name = "temp_{}"
     # split input file into several parts
-    files = []  # saves i/o
+    files = [0]*27
     temp_numbers = []
-    j = 0
-    i = 0
     print("Start split and sort!")
+
+    # NEW
     with open(os.path.join(ROOT_DIR, 'gen_numbers.txt')) as f_in:
-        for line in f_in:  # 1, 2
-            j += 1
-            if j % 37037037 == 0:
-                files.append(open(os.path.join(ROOT_DIR, file_name.format(i)), 'w+'))
-                temp_numbers.sort()  # Timsort in Python
-                for z in temp_numbers:
-                    files[i].write(str(z) + "\n")
-                i += 1
-                temp_numbers.clear()
-            temp_numbers.append(int(line))
-    print("Split and sorting parts time: {} minutes".format((time() - start_split)/60))
-    #i = 27
-    '''for l in range(i):
-        files[l] = open(os.path.join(ROOT_DIR, file_name.format(l)))'''
+        #f_in.seek(2)
+        for i in range(27):
+            temp_numbers = f_in.read(12*37037037).split('\n')  # read each 1/27 part
+            temp_numbers.sort()  # Timsort in Python
+            files[i] = open(os.path.join(ROOT_DIR, file_name.format(i)), 'w+')
+            files[i].write(''.join(str(line) + '\n' for line in temp_numbers))
+            temp_numbers.clear()
+        print("Split and sorting parts time: {} seconds".format((time() - start_split)))
+
     # external sorting
+    buffer = []
     print("Start external sorting")
     start_sort = time()
     f_out = open(os.path.join(ROOT_DIR, 'sort1_numbers.txt'), 'w')  # 3
-    temp_numbers.clear()
     files_copy = files.copy()
 
-    for p in range(i):  # 4
-        files[p].seek(0)  # cursor in each file to it`s start
-        temp_numbers.append(int(files[p].readline()[:11]))
+    for p in range(27):  # 4
+        files[p].seek(2)  # cursor in each file to it`s start
+        temp_numbers.append(files[p].readline()[:11])
     while True:
         min_i = temp_numbers.index(min(temp_numbers))  # 5.1
-        f_out.write(str(temp_numbers[min_i]) + "\n")  # 5.2
-        k = files[min_i].readline()[:11]  # 5.3
-        if k == "" or k == "\n":  # 5.4
+        if len(buffer) == 37037037:  # 5.2
+            f_out.write(''.join(line for line in buffer)) # 5.2
+            buffer.clear()
+        else:
+            buffer.append(temp_numbers[min_i]+'\n')
+        k = files[min_i].readline()  # 5.3
+        if k == "" or k == "\n" or k is None:  # 5.4
             temp_numbers.pop(min_i)
             files[min_i].close()
             files.pop(min_i)
         else:
-            temp_numbers[min_i] = int(k)
+            temp_numbers[min_i] = k[:11]
         if len(files) == 0:
+            if len(buffer) > 0:
+                f_out.write(''.join(line for line in buffer))
+            break
+        if len(temp_numbers) == 0:
+            if len(buffer) > 0:
+                f_out.write(''.join(line for line in buffer))
             break
 
-    for w in range(i):  # 6
+    for w in range(27):  # 6
         try:
             files_copy[w].close()
         except:
@@ -59,7 +63,7 @@ def sorter_1():
         finally:
             os.remove(os.path.join(ROOT_DIR, file_name.format(w)))
     f_out.close()
-    print("External sorting time: {} minutes".format((time() - start_sort)/60))
+    print("External sorting time: {} seconds".format((time() - start_sort)))
 
 
 def sorter_2():
@@ -82,6 +86,5 @@ def sorter_2():
         for num in sorted_numbers:
             f_out.write("%s\n" % num)
     print("Linear sorting time: %s seconds" % (time() - start_time))
-    print("List memory size: {} bytes".format(getsizeof(sorted_numbers)))
 
 
