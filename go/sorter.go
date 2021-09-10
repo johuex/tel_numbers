@@ -9,10 +9,10 @@ import (
 	"time"
 )
 
-func Min(array []uint64) (uint64, uint64) {
+func Min(array *[]uint64) (uint64, uint64) {
 	var min uint64
 	var min_i uint64
-	for i, value := range array {
+	for i, value := range *array {
 		if min > value {
 			min = value
 			min_i = uint64(i)
@@ -36,14 +36,14 @@ func sorter_1() {
 	//split and sort temp
 	split_sort_time := time.Now()
 	var numbers []uint64
-	i := 0 //for Buffer
+	q := 0 //for Buffer
 	j := int64(0)
 	scanner := bufio.NewScanner(file_in)
 	for scanner.Scan() {
 		num, _ := strconv.ParseUint(scanner.Text(), 10, 64)
 		numbers = append(numbers, num)
-		i++
-		if i == buffer_size {
+		q++
+		if q == buffer_size {
 			//sort and write 1/8 part
 			sort.Slice(numbers, func(i, j int) bool { return numbers[i] < numbers[j] }) //ascending sort
 			tmp_file, _ := os.OpenFile(tempFileName+strconv.FormatInt(j, 10), os.O_CREATE|os.O_RDWR, 0666)
@@ -52,25 +52,28 @@ func sorter_1() {
 				_, _ = fmt.Fprintln(w, numbers[i])
 			}
 			files = append(files, tmp_file)
-			i = 0
+			q = 0
 			j++
 		}
 	}
+	numbers = nil
 	fmt.Printf("Split and sort temp files time: %d seconds\n", time.Now().Unix()-split_sort_time.Unix())
 
 	//external sorting
-	files_copy := files
+	var files_copy []*os.File
+	copy(files_copy, files)
 	external_sort_time := time.Now()
-	var temp_numbers []uint64
-	var buffer []uint64
+	temp_numbers := make([]uint64, len(files))
+	buffer := make([]uint64, buffer_size)
+	f_scanner := make([]*bufio.Scanner, len(files))
 	for i := 0; i < len(files); i++ {
-		_, _ = files[j].Seek(0, 0) //cursor to begin of file
-		tmp_scanner := bufio.NewScanner(files[j])
-		tmp_num, _ := strconv.ParseUint(tmp_scanner.Text(), 10, 64)
+		_, _ = files[i].Seek(0, 0) //cursor to begin of file
+		f_scanner = append(f_scanner, bufio.NewScanner(files[i]))
+		tmp_num, _ := strconv.ParseUint(f_scanner[i].Text(), 10, 64)
 		temp_numbers = append(temp_numbers, tmp_num)
 	}
 	for {
-		_, min_i := Min(temp_numbers)
+		_, min_i := Min(&temp_numbers)
 		if len(buffer) == buffer_size {
 			w := bufio.NewWriter(file_out)
 			for i := 0; i < len(buffer); i++ {
@@ -81,9 +84,7 @@ func sorter_1() {
 		} else {
 			buffer = append(buffer, temp_numbers[min_i])
 		}
-
-		tmp_scanner := bufio.NewScanner(files[min_i])
-		k := tmp_scanner.Text()
+		k := f_scanner[min_i].Text()
 		if k == "" || k == "\n" {
 			temp_numbers = append(temp_numbers[:min_i], temp_numbers[min_i+1:]...)
 			files = append(files[:min_i], files[min_i+1:]...)
@@ -103,7 +104,7 @@ func sorter_1() {
 	}
 	fmt.Printf("Split and sort temp files time: %d seconds\n", time.Now().Unix()-external_sort_time.Unix())
 
-	for i := 0; i < len(files); i++ {
+	for i := 0; i < len(files_copy); i++ {
 		_ = files_copy[i].Close()
 	}
 	fmt.Printf("All time: %d seconds\n", time.Now().Unix()-startTime.Unix())

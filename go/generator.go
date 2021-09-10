@@ -12,11 +12,12 @@ import (
 
 func gen() {
 	//8-9**-***-**-**
+	fmt.Println("Generation start!")
 	lenNumbers := 1000000000
 	numbers := make([]uint64, lenNumbers)
 	startTime := time.Now()
 	file, _ := os.OpenFile("gen_numbers.txt", os.O_CREATE|os.O_WRONLY, 0666) //create and open
-	defer file.Close() //close at the end of func
+	defer file.Close()                                                       //close at the end of func
 
 	for i := 0; i < lenNumbers; i++ {
 		numbers[i] = 89000000000 + uint64(i)
@@ -25,7 +26,7 @@ func gen() {
 
 	shuffleTime := time.Now()
 	halfLenNumbers := (lenNumbers - 1) / 2 //get int, not float
-	for i:=0; i < halfLenNumbers; i++ {
+	for i := 0; i < halfLenNumbers; i++ {
 		end_i := lenNumbers - 1 - i
 		rand_i := rand.Intn(end_i/2 - 1)
 		numbers[end_i], numbers[rand_i] = numbers[rand_i], numbers[end_i]
@@ -41,6 +42,3 @@ func gen() {
 
 	fmt.Printf("All time: %d seconds\n", time.Now().Unix()-startTime.Unix())
 }
-
-
-
