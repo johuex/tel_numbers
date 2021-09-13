@@ -54,9 +54,9 @@ func sorter_1() {
 			files = append(files, tmp_file)
 			q = 0
 			j++
+			numbers = nil
 		}
 	}
-	numbers = nil
 	fmt.Printf("Split and sort temp files time: %d seconds\n", time.Now().Unix()-split_sort_time.Unix())
 
 	//external sorting
@@ -68,7 +68,7 @@ func sorter_1() {
 	f_scanner := make([]*bufio.Scanner, len(files))
 	for i := 0; i < len(files); i++ {
 		_, _ = files[i].Seek(0, 0) //cursor to begin of file
-		f_scanner = append(f_scanner, bufio.NewScanner(files[i]))
+		f_scanner[i] = bufio.NewScanner(files[i])
 		tmp_num, _ := strconv.ParseUint(f_scanner[i].Text(), 10, 64)
 		temp_numbers = append(temp_numbers, tmp_num)
 	}
