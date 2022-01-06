@@ -9,11 +9,12 @@ import (
 	"time"
 )
 
+//Returns the minimum element of an array and its index
 func Min(array *[]uint64) (uint64, uint64) {
-	var min uint64
-	var min_i uint64
+	min := (*array)[0]
+	min_i := uint64(0)
 	for i, value := range *array {
-		if min > value {
+		if value < min {
 			min = value
 			min_i = uint64(i)
 		}
@@ -21,110 +22,125 @@ func Min(array *[]uint64) (uint64, uint64) {
 	return min, min_i
 }
 
-func sorter_1() {
-	//sort with memory limit (for example, 1 Gb)
-	// 8(or 16????)*10^9 / 1024^3 = 7,45 or 8 temp files
+//sort with 1GB memory limit
+func sorterWithRamLimit() {
 	startTime := time.Now()
-	buffer_size := 125000000
-	file_in, _ := os.OpenFile("gen_numbers.txt", os.O_RDONLY, 0666)           //open for reading
-	file_out, _ := os.OpenFile("sorter_1.txt", os.O_CREATE|os.O_WRONLY, 0666) //create and open
+	allNumbers := 1000000000
+	numFiles := 8
+	bufferSize := allNumbers / numFiles                                                // 1'000'000'000 / 8
+	fileIn, _ := os.OpenFile("gen_numbers.txt", os.O_RDONLY, 0666)                     //open for reading
+	fileOut, _ := os.OpenFile("sortedWithRamLimit.txt", os.O_CREATE|os.O_WRONLY, 0666) //create and open
 	var files []*os.File
 	tempFileName := "temp_"
-	defer file_in.Close()
-	defer file_out.Close()
+	writer := bufio.NewWriter(fileOut)
+	defer fileIn.Close()
+	defer fileOut.Close()
 
-	//split and sort temp
-	split_sort_time := time.Now()
-	var numbers []uint64
-	q := 0 //for Buffer
-	j := int64(0)
-	scanner := bufio.NewScanner(file_in)
-	for scanner.Scan() {
-		num, _ := strconv.ParseUint(scanner.Text(), 10, 64)
-		numbers = append(numbers, num)
-		q++
-		if q == buffer_size {
-			//sort and write 1/8 part
+	//split and sort temp files
+	splitSortTime := time.Now()
+	numbers := make([]uint64, bufferSize) //numbers for one temp file
+	q := 0                                //counting numbers for Buffer
+	j := 0
+	reader := bufio.NewReader(fileIn)
+	// TODO понять откуда тут берутся нули в последнем файле
+	for j != numFiles {
+		elem, _ := reader.ReadString('\n')
+		if elem != "" {
+			num, _ := strconv.ParseUint(elem[:len(elem)-1], 10, 64)
+			numbers[q] = num
+			q++
+		}
+		if q == bufferSize || elem == "" {
+			//sort and write one part to temp file
 			sort.Slice(numbers, func(i, j int) bool { return numbers[i] < numbers[j] }) //ascending sort
-			tmp_file, _ := os.OpenFile(tempFileName+strconv.FormatInt(j, 10), os.O_CREATE|os.O_RDWR, 0666)
-			w := bufio.NewWriter(tmp_file)
-			for i := 0; i < buffer_size; i++ {
+			tmpFile, _ := os.OpenFile(tempFileName+strconv.FormatInt(int64(j), 10), os.O_CREATE|os.O_RDWR, 0666)
+			w := bufio.NewWriter(tmpFile)
+			for i := 0; i < len(numbers); i++ {
 				_, _ = fmt.Fprintln(w, numbers[i])
 			}
-			files = append(files, tmp_file)
+			files = append(files, tmpFile)
 			q = 0
 			j++
 			numbers = nil
+			numbers = make([]uint64, bufferSize)
+			w = nil
 		}
 	}
-	fmt.Printf("Split and sort temp files time: %d seconds\n", time.Now().Unix()-split_sort_time.Unix())
+	reader = nil
+	fmt.Printf("Split and sort temp files time: %d seconds\n", time.Now().Unix()-splitSortTime.Unix())
 
-	//external sorting
-	var files_copy []*os.File
-	copy(files_copy, files)
-	external_sort_time := time.Now()
-	temp_numbers := make([]uint64, len(files))
-	buffer := make([]uint64, buffer_size)
-	f_scanner := make([]*bufio.Scanner, len(files))
+	//start sorting
+	externalSortTime := time.Now()
+	minimumNumbers := make([]uint64, len(files)) // list of minimum elements in temp files
+	var buffer []uint64
+	fReader := make([]*bufio.Reader, len(files))
+	//fill in minimum elements of temp files
 	for i := 0; i < len(files); i++ {
-		_, _ = files[i].Seek(0, 0) //cursor to begin of file
-		f_scanner[i] = bufio.NewScanner(files[i])
-		tmp_num, _ := strconv.ParseUint(f_scanner[i].Text(), 10, 64)
-		temp_numbers = append(temp_numbers, tmp_num)
+		_, _ = files[i].Seek(0, 0)             //cursor to begin of file
+		fReader[i] = bufio.NewReader(files[i]) //scanner for each file
+		elem, _ := fReader[i].ReadString('\n')
+		tmpNum, _ := strconv.ParseUint(elem[:len(elem)-1], 10, 64) // minimum of temp file
+		minimumNumbers[i] = tmpNum
 	}
+	//external sorting
 	for {
-		_, min_i := Min(&temp_numbers)
-		if len(buffer) == buffer_size {
-			w := bufio.NewWriter(file_out)
+		_, min_i := Min(&minimumNumbers) //search minimum element of all temp files
+		if len(buffer) == bufferSize {   //wait for fill in buffer to write in file_out
 			for i := 0; i < len(buffer); i++ {
-				_, _ = fmt.Fprintln(w, buffer[i])
+				_, _ = fmt.Fprintln(writer, buffer[i])
 			}
 			buffer = nil
-			buffer = append(buffer, temp_numbers[min_i])
+			buffer = append(buffer, minimumNumbers[min_i])
 		} else {
-			buffer = append(buffer, temp_numbers[min_i])
+			buffer = append(buffer, minimumNumbers[min_i])
 		}
-		k := f_scanner[min_i].Text()
+		k, _ := fReader[min_i].ReadString('\n')
+		// delete minimum number if temp file is EOF else Scan new number of temp file
 		if k == "" || k == "\n" {
-			temp_numbers = append(temp_numbers[:min_i], temp_numbers[min_i+1:]...)
-			files = append(files[:min_i], files[min_i+1:]...)
+			minimumNumbers = append(minimumNumbers[:min_i], minimumNumbers[min_i+1:]...)
+			fReader = append(fReader[:min_i], fReader[min_i+1:]...)
 		} else {
-			temp_numbers[min_i], _ = strconv.ParseUint(k, 10, 64)
+			minimumNumbers[min_i], _ = strconv.ParseUint(k[:len(k)-1], 10, 64)
 		}
-		if len(files) == 0 || len(temp_numbers) == 0 {
+		//if no temp_files or minimum_numbers than end of sorting
+		if len(fReader) == 0 || len(minimumNumbers) == 0 {
 			if len(buffer) > 0 {
-				w := bufio.NewWriter(file_out)
+				// write in remaining buffer's elements in file_out
 				for i := 0; i < len(buffer); i++ {
-					_, _ = fmt.Fprintln(w, buffer[i])
+					_, _ = fmt.Fprintln(writer, buffer[i])
 				}
 				buffer = nil
 			}
 			break
 		}
 	}
-	fmt.Printf("Split and sort temp files time: %d seconds\n", time.Now().Unix()-external_sort_time.Unix())
+	fmt.Printf("External sorting time: %d seconds\n", time.Now().Unix()-externalSortTime.Unix())
 
-	for i := 0; i < len(files_copy); i++ {
-		_ = files_copy[i].Close()
+	for i := 0; i < len(files); i++ {
+		_ = files[i].Close()
+		//	os.Remove(files[i].Name())
 	}
 	fmt.Printf("All time: %d seconds\n", time.Now().Unix()-startTime.Unix())
 }
 
-func sorter_2() {
+func sorterNoLimit() {
 	//sort with no memory limit
 	startTime := time.Now()
-	file_in, _ := os.OpenFile("gen_numbers.txt", os.O_RDONLY, 0666)           //open for reading
-	file_out, _ := os.OpenFile("sorter_2.txt", os.O_CREATE|os.O_WRONLY, 0666) //create and open
-	defer file_in.Close()
-	defer file_out.Close()
+	fileIn, _ := os.OpenFile("gen_numbers.txt", os.O_RDONLY, 0666)                   //open for reading
+	fileOut, _ := os.OpenFile("sortedNoRamLimit.txt", os.O_CREATE|os.O_WRONLY, 0666) //create and open
+	defer fileIn.Close()
+	defer fileOut.Close()
 
 	//read from file
 	readTime := time.Now()
-	var numbers []uint64
-	scanner := bufio.NewScanner(file_in)
-	for scanner.Scan() {
-		num, _ := strconv.ParseUint(scanner.Text(), 10, 64)
-		numbers = append(numbers, num)
+	numbers := make([]uint64, 1000000000) // size = all phone numbers
+	j := uint64(0)
+	reader := bufio.NewReader(fileIn)
+	for j != 1000000000 {
+		elem, _ := reader.ReadString('\n')
+		num, _ := strconv.ParseUint(elem[:len(elem)-1], 10, 64)
+		j++
+		numbers[j] = num
 	}
 	fmt.Printf("Read from file time: %d seconds\n", time.Now().Unix()-readTime.Unix())
 
@@ -133,9 +149,10 @@ func sorter_2() {
 	sort.Slice(numbers, func(i, j int) bool { return numbers[i] < numbers[j] }) //ascending sort
 	fmt.Printf("Sort time: %d seconds\n", time.Now().Unix()-sortTime.Unix())
 
+	//write to file
 	writeTime := time.Now()
 	lenNumbers := len(numbers)
-	w := bufio.NewWriter(file_out)
+	w := bufio.NewWriter(fileOut)
 	for i := 0; i < lenNumbers; i++ {
 		_, _ = fmt.Fprintln(w, numbers[i])
 	}
