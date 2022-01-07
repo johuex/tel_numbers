@@ -42,13 +42,21 @@ func sorterWithRamLimit() {
 	q := 0                                //counting numbers for Buffer
 	j := 0
 	reader := bufio.NewReader(fileIn)
-	// TODO понять откуда тут берутся нули в последнем файле
 	for j != numFiles {
 		elem, _ := reader.ReadString('\n')
-		if elem != "" {
+		if elem != "" && elem != "8936" {
+			/*
+				"" - это знак окончания чтения исходного файла, на нем завершаем чтение.
+				НО Почему 8936? Почему то в исходном файле находится данное число.
+				Поймать его при записе в функции gen() не удалось. Оно появляется только в этом месте при чтении.
+				Как решить эту проблему пока идей нет :(
+			*/
 			num, _ := strconv.ParseUint(elem[:len(elem)-1], 10, 64)
 			numbers[q] = num
 			q++
+		} else {
+			//shrink to fit our slice to avoid extra zeros if catch last empty element of file_in
+			numbers = numbers[:q]
 		}
 		if q == bufferSize || elem == "" {
 			//sort and write one part to temp file
@@ -118,7 +126,7 @@ func sorterWithRamLimit() {
 
 	for i := 0; i < len(files); i++ {
 		_ = files[i].Close()
-		//	os.Remove(files[i].Name())
+		os.Remove(files[i].Name())
 	}
 	fmt.Printf("All time: %d seconds\n", time.Now().Unix()-startTime.Unix())
 }
@@ -138,9 +146,14 @@ func sorterNoLimit() {
 	reader := bufio.NewReader(fileIn)
 	for j != 1000000000 {
 		elem, _ := reader.ReadString('\n')
-		num, _ := strconv.ParseUint(elem[:len(elem)-1], 10, 64)
-		j++
-		numbers[j] = num
+		if elem != "" {
+			num, _ := strconv.ParseUint(elem[:len(elem)-1], 10, 64)
+			numbers[j] = num
+			j++
+		} else {
+			//shrink to fit our slice to avoid extra zeros if catch last empty element of file_in
+			numbers = numbers[:j]
+		}
 	}
 	fmt.Printf("Read from file time: %d seconds\n", time.Now().Unix()-readTime.Unix())
 

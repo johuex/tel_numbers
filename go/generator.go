@@ -21,14 +21,14 @@ func gen() {
 	defer file.Close()                                                       //close at the end of func
 
 	// Generate all numbers
-	for i := 0; i < lenNumbers; i++ {
+	for i := uint64(0); i < uint64(lenNumbers); i++ {
 		numbers[i] = 89000000000 + uint64(i)
 	}
 	fmt.Printf("Generation time: %d seconds\n", time.Now().Unix()-startTime.Unix())
 
 	// Shuffle all numbers
 	shuffleTime := time.Now()
-	halfLenNumbers := (lenNumbers - 1) / 2 //get int, not float
+	halfLenNumbers := lenNumbers / 2 //we receive int, not float
 	for i := 0; i < halfLenNumbers; i++ {
 		end_i := lenNumbers - 1 - i
 		rand_i := rand.Intn(end_i/2 - 1)
