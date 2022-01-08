@@ -146,7 +146,7 @@ func sorterNoLimit() {
 	reader := bufio.NewReader(fileIn)
 	for j != 1000000000 {
 		elem, _ := reader.ReadString('\n')
-		if elem != "" {
+		if elem != "" && elem != "8936" {
 			num, _ := strconv.ParseUint(elem[:len(elem)-1], 10, 64)
 			numbers[j] = num
 			j++
