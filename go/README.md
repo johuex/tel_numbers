@@ -14,9 +14,9 @@
 
 ## Results
 1. 4-core CPU, 8Gb RAM, **HDD**
-   ![](/results/generation+limit_sorting_HDD.PNG "Sort with RAM limit, HDD")
+   ![](./results/generation+limit_sorting_HDD.PNG "Sort with RAM limit, HDD")
 2. 4-core CPU, 8Gb RAM, **SSD**
-   ![](/results/generation+limit_sotring_SSD.PNG "Sort with RAM limit, SSD")
+   ![](./results/generation+limit_sotring_SSD.PNG "Sort with RAM limit, SSD")
 
 ### Some problems
 While splitting input file to several files, we can receive extra number `8936`, I can't catch this element while generation and writing to input file.
