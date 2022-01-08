@@ -12,10 +12,13 @@ func main() {
 		//file doesn't exist
 		gen()
 	}
+	//fmt.Println()
+	//fmt.Println("Sorting with memory limit (1 Gb)")
+	//sorterWithRamLimit()
+	//fmt.Println()
+	//fmt.Println("Sorting with no memory limit")
+	//sorterNoLimit()
 	fmt.Println()
-	fmt.Println("Sorting with memory limit (1 Gb)")
-	sorterWithRamLimit()
-	fmt.Println()
-	fmt.Println("Sorting with no memory limit")
-	sorterNoLimit()
+	fmt.Println("Sorting with SQL")
+	sqlSort()
 }

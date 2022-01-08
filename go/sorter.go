@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
 	"fmt"
 	"os"
 	"sort"
@@ -172,4 +173,46 @@ func sorterNoLimit() {
 	fmt.Printf("Write to file time: %d seconds\n", time.Now().Unix()-writeTime.Unix())
 
 	fmt.Printf("All time: %d seconds\n", time.Now().Unix()-startTime.Unix())
+}
+
+func sqlSort() {
+	allNumbers := 1000000000
+	fileIn, _ := os.OpenFile("gen_numbers.txt", os.O_RDONLY, 0666)
+	fileOut, _ := os.OpenFile("sortedSQL.txt", os.O_CREATE|os.O_WRONLY, 0666) //create and open
+	defer fileIn.Close()
+	defer fileOut.Close()
+	result := make([]string, allNumbers)
+
+	reader := bufio.NewReader(fileIn)
+	writer := bufio.NewWriter(fileOut)
+
+	_, _ = os.Create("numbers.db")
+	db, err := sql.Open("sqlite3", "numbers.db")
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	// CREATE + INSERT
+	insertTime := time.Now()
+	_, err = db.Exec("CREATE TABLE numbers(phone VARCHAR(11) PRIMARY KEY);") // CREATE TABLE
+	for i := 0; i < allNumbers; i++ {
+		elem, _ := reader.ReadString('\n')
+		_, err = db.Exec("INSERT INTO numbers (phone) values ($1)", elem[:len(elem)-1]) // INSERT VALUES
+	}
+	fmt.Printf("Inserting to DB: %d seconds\n", time.Now().Unix()-insertTime.Unix())
+
+	//SELECT ASC
+	selectTime := time.Now()
+	rows, _ := db.Query("SELECT * FROM numbers ORDER BY phone ASC") // SELECT WITH ASC
+	rows.Scan(result)                                               // from sql.Query to []string
+	fmt.Printf("SELECT ASC + translating from sql.Query to []string: %d seconds\n", time.Now().Unix()-selectTime.Unix())
+
+	//writing to file
+	writeTime := time.Now()
+	for _, value := range result {
+		_, _ = fmt.Fprintln(writer, value)
+	}
+	fmt.Printf("Write to file time: %d seconds\n", time.Now().Unix()-writeTime.Unix())
+
 }
