@@ -42,6 +42,7 @@ func gen() {
 	for i := 0; i < lenNumbers; i++ {
 		_, _ = fmt.Fprintln(w, numbers[i])
 	}
+	numbers = nil
 	fmt.Printf("Write to file time: %d seconds\n", time.Now().Unix()-writeTime.Unix())
 
 	fmt.Printf("All time: %d seconds\n", time.Now().Unix()-startTime.Unix())
