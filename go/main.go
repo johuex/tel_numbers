@@ -18,7 +18,7 @@ func main() {
 	fmt.Println()
 	fmt.Println("Sorting with no memory limit")
 	sorterNoLimit()
-	//fmt.Println()
-	//fmt.Println("Sorting with SQL")
-	//sqlSort()
+	fmt.Println()
+	fmt.Println("Sorting with SQL")
+	sqlSort()
 }
