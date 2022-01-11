@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strconv"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 //Returns the minimum element of an array and its index
@@ -182,7 +184,7 @@ func sorterNoLimit() {
 }
 
 func sqlSort() {
-	allNumbers := 1000000000
+	allNumbers := uint32(1000000000)
 	fileIn, _ := os.OpenFile("gen_numbers.txt", os.O_RDONLY, 0666)
 	fileOut, _ := os.OpenFile("sortedSQL.txt", os.O_CREATE|os.O_WRONLY, 0666) //create and open
 	defer fileIn.Close()
@@ -202,7 +204,7 @@ func sqlSort() {
 	// CREATE + INSERT
 	insertTime := time.Now()
 	_, err = db.Exec("CREATE TABLE numbers(phone VARCHAR(11) PRIMARY KEY);") // CREATE TABLE
-	for i := 0; i < allNumbers; i++ {
+	for i := uint32(0); i < allNumbers; i++ {
 		elem, _ := reader.ReadString('\n')
 		_, err = db.Exec("INSERT INTO numbers (phone) values ($1)", elem[:len(elem)-1]) // INSERT VALUES
 	}
